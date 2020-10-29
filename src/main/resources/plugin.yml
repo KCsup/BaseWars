@@ -1,0 +1,4 @@
+name: BaseWars
+version: 1.0
+main: com.kcsup.basewars.Main
+description: BaseWars for EnzoBot's event.
