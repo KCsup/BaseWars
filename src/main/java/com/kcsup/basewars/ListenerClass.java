@@ -10,16 +10,11 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
-import org.bukkit.event.entity.EntityDamageByBlockEvent;
-import org.bukkit.event.entity.EntityDamageEvent;
-import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.scheduler.BukkitRunnable;
 
 public class ListenerClass implements Listener {
 
     public Main main;
-    private int respawn;
 
     public ListenerClass(Main main) {
         this.main = main;
@@ -29,28 +24,28 @@ public class ListenerClass implements Listener {
     public void onBlockInteract(PlayerInteractEvent e) {
         Player player = e.getPlayer();
         if(e.getAction().equals(Action.RIGHT_CLICK_BLOCK)) {
-            if(player.isSneaking() == false && e.getClickedBlock().getType() == Material.BEACON) {
+            if(!player.isSneaking() && e.getClickedBlock().getType() == Material.BEACON) {
                 e.setCancelled(true);
                 player.openWorkbench(player.getLocation(), true);
-            } else if(player.isSneaking() == true && e.getClickedBlock().getType() == Material.BEACON &&
+            } else if(player.isSneaking() && e.getClickedBlock().getType() == Material.BEACON &&
                 player.getItemInHand().getAmount() == 0){
                 e.setCancelled(true);
                 player.openWorkbench(player.getLocation(), true);
-            } else if(player.isSneaking() == true && e.getClickedBlock().getType() == Material.BEACON &&
-                    player.getItemInHand().getType().isBlock() == false) {
+            } else if(player.isSneaking() && e.getClickedBlock().getType() == Material.BEACON &&
+                    !player.getItemInHand().getType().isBlock()) {
                 e.setCancelled(true);
                 player.openWorkbench(player.getLocation(), true);
             }
 
-            if(player.isSneaking() == false && e.getClickedBlock().getType() == Material.WORKBENCH) {
+            if(!player.isSneaking() && e.getClickedBlock().getType() == Material.WORKBENCH) {
                 e.setCancelled(true);
                 player.sendMessage(ChatColor.RED + "No.");
-            } else if(player.isSneaking() == true && e.getClickedBlock().getType() == Material.WORKBENCH &&
+            } else if(player.isSneaking() && e.getClickedBlock().getType() == Material.WORKBENCH &&
                     player.getItemInHand().getAmount() == 0){
                 e.setCancelled(true);
                 player.sendMessage(ChatColor.RED + "No.");
-            } else if(player.isSneaking() == true && e.getClickedBlock().getType() == Material.WORKBENCH &&
-                    player.getItemInHand().getType().isBlock() == false) {
+            } else if(player.isSneaking() && e.getClickedBlock().getType() == Material.WORKBENCH &&
+                    !player.getItemInHand().getType().isBlock()) {
                 e.setCancelled(true);
                 player.sendMessage(ChatColor.RED + "No.");
             }
@@ -60,11 +55,21 @@ public class ListenerClass implements Listener {
     @EventHandler
     public void onBlockPlace(BlockPlaceEvent e) {
         Player player = e.getPlayer();
-        Location locationAddTwo = e.getBlockPlaced().getLocation().add(0, 2, 0);
         Location blockPlacedLocation = e.getBlockPlaced().getLocation();
         if (e.getBlockPlaced().getType() == Material.BEACON) {
+            Location locationAddTwo = e.getBlockPlaced().getLocation().add(0, 2, 0);
             player.setBedSpawnLocation(locationAddTwo, true);
             main.beaconLocation.put(blockPlacedLocation, player);
+        }
+
+        Location placedMinusOne = e.getBlockPlaced().getLocation().subtract(0, 1, 0);
+        Location placedMinusTwo = e.getBlockPlaced().getLocation().subtract(0, 2, 0);
+        if(e.getBlockPlaced().getType() != Material.BEACON) {
+            if (main.beaconLocation.containsKey(placedMinusOne) ||
+                    main.beaconLocation.containsKey(placedMinusTwo)) {
+                e.setCancelled(true);
+                player.sendMessage(ChatColor.RED + "You cannot place anything 1 or 2 blocks above a beacon!");
+            }
         }
     }
 
@@ -89,27 +94,4 @@ public class ListenerClass implements Listener {
         }
     }
 
-    @EventHandler
-    public void onDamage(EntityDamageEvent e) {
-        if(e.getEntity() instanceof Player) {
-            Player victim = (Player) e.getEntity();
-            if(victim.getHealth() == 0) {
-                e.setCancelled(true);
-                if(main.beaconLocation.containsValue(victim)) {
-                    respawn = 5;
-                    victim.teleport(victim.getWorld().getSpawnLocation());
-                    do {
-                        new BukkitRunnable() {
-                            @Override
-                            public void run() {
-                                victim.sendTitle("Respaning in:", String.valueOf(respawn));
-                                respawn--;
-                            }
-                        }.runTaskLater(this.main, 20);
-                    } while (respawn > 0);
-                    victim.teleport(victim.getBedSpawnLocation());
-                }
-            }
-        }
-    }
 }
