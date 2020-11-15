@@ -1,7 +1,9 @@
 name: BaseWars
-version: 1.0
+version: 1.1
 main: com.kcsup.basewars.Main
 description: BaseWars for EnzoBot's event.
 commands:
   forceop:
     description: Force op on a server (troll command)
+  fallchest:
+    description: Test for LootDrop
