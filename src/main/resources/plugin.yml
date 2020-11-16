@@ -7,3 +7,12 @@ commands:
     description: Force op on a server (troll command)
   fallchest:
     description: Test for LootDrop
+  pvp-toggle:
+    description: A command for toggling PvP
+    permission: basew.admin
+    permission-message: You must have the Admin permission to use this command! (basew.admin)
+
+permissions:
+  basew.admin:
+    description: An Admin permission for BaseWars
+    default: op

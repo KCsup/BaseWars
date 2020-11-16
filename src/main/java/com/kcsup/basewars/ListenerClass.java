@@ -10,10 +10,14 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.*;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.inventory.PrepareItemCraftEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.material.MaterialData;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class ListenerClass implements Listener {
 
@@ -158,28 +162,80 @@ public class ListenerClass implements Listener {
         }
     }
 
-//    @EventHandler
-//    public void onPiston(BlockPistonExtendEvent e) {
-//        Block piston = e.getBlock();
-//        Location blockLocation = piston.getLocation();
-//        for(Player online : Bukkit.getOnlinePlayers()) {
-//            online.sendMessage(ChatColor.GREEN + "Working");
-//        }
-//        if(main.blockY.contains(blockLocation.getY()) ||
-//        main.blockY.contains(blockLocation.getY() - 1) ||
-//        main.blockY.contains(blockLocation.getY() - 2)) {
-//            if(e.getDirection() == BlockFace.NORTH){
-//
-//            } else if(e.getDirection() == BlockFace.EAST) {
-//
-//            } else if(e.getDirection() == BlockFace.SOUTH) {
-//
-//            } else if(e.getDirection() == BlockFace.WEST) {
-//
-//            }
-//        }
-//
-//    }
+    @EventHandler
+    public void onPVP(EntityDamageByEntityEvent e) {
+        if(e.getDamager() instanceof Player) {
+            Player damager = (Player) e.getDamager();
+            if(e.getEntity() instanceof Player) {
+                Player victim = (Player) e.getEntity();
+                if(!main.pvpEnabled) {
+                    damager.sendMessage(ChatColor.RED + "PvP is currently disabled!");
+                    e.setCancelled(true);
+                }
+            }
+        }
+    }
+
+    @EventHandler
+    public void onPiston(BlockPistonExtendEvent e) {
+        Block piston = e.getBlock();
+        int beingPushed = e.getBlocks().size();
+        Location blockLocation = piston.getLocation();
+        List<Material> pushedMaterials = new ArrayList<>();
+
+        for(Player online : Bukkit.getOnlinePlayers()) {
+            online.sendMessage(ChatColor.GREEN + "Working");
+        }
+        for(Block block : e.getBlocks()){
+            pushedMaterials.add(block.getType());
+        }
+        if(pushedMaterials.contains(Material.SLIME_BLOCK)) {
+            e.setCancelled(true);
+        } else {
+            if (e.getDirection() == BlockFace.NORTH) {
+                if (main.blockY.contains(blockLocation.getY() - 1) ||
+                        main.blockY.contains(blockLocation.getY() - 2)) {
+                    if (main.beaconXZ.containsKey(blockLocation.getX()) &&
+                            main.beaconXZ.containsValue(blockLocation.getZ() - beingPushed - 1)) {
+                        e.setCancelled(true);
+                    }
+                }
+            } else if (e.getDirection() == BlockFace.EAST) {
+                if (main.blockY.contains(blockLocation.getY() - 1) ||
+                        main.blockY.contains(blockLocation.getY() - 2)) {
+                    if (main.beaconXZ.containsKey(blockLocation.getX() + beingPushed + 1) &&
+                            main.beaconXZ.containsValue(blockLocation.getZ())) {
+                        e.setCancelled(true);
+                    }
+                }
+            } else if (e.getDirection() == BlockFace.SOUTH) {
+                if (main.blockY.contains(blockLocation.getY() - 1) ||
+                        main.blockY.contains(blockLocation.getY() - 2)) {
+                    if (main.beaconXZ.containsKey(blockLocation.getX()) &&
+                            main.beaconXZ.containsValue(blockLocation.getZ() + beingPushed + 1)) {
+                        e.setCancelled(true);
+                    }
+                }
+            } else if (e.getDirection() == BlockFace.WEST) {
+                if (main.blockY.contains(blockLocation.getY() - 1) ||
+                        main.blockY.contains(blockLocation.getY() - 2)) {
+                    if (main.beaconXZ.containsKey(blockLocation.getX() - beingPushed - 1) &&
+                            main.beaconXZ.containsValue(blockLocation.getZ())) {
+                        e.setCancelled(true);
+                    }
+                }
+            } else if(e.getDirection() == BlockFace.DOWN) {
+                if(main.beaconXZ.containsKey(blockLocation.getX()) &&
+                main.beaconXZ.containsValue(blockLocation.getZ())) {
+                    if(main.blockY.contains(blockLocation.getY() - beingPushed - 2) ||
+                    main.blockY.contains(blockLocation.getY() - beingPushed - 3)) {
+                        e.setCancelled(true);
+                    }
+                }
+            }
+        }
+
+    }
 
 //    @EventHandler
 //    public void onInventoryClick(InventoryClickEvent e) {
