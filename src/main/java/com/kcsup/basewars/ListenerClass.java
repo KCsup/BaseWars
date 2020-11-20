@@ -14,7 +14,6 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.inventory.PrepareItemCraftEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.material.MaterialData;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,6 +24,11 @@ public class ListenerClass implements Listener {
 
     public ListenerClass(Main main) {
         this.main = main;
+    }
+
+    private boolean isInBeaconXZ(double X, double Z) {
+        return main.beaconXZ.containsKey(X) &&
+                main.beaconXZ.containsValue(Z);
     }
 
     @EventHandler
@@ -109,6 +113,7 @@ public class ListenerClass implements Listener {
     public void onBlockBreak(BlockBreakEvent e) {
         Player playerBreaking = e.getPlayer();
         Location blockBrokenLocation = e.getBlock().getLocation();
+        World world = blockBrokenLocation.getWorld();
         if(e.getBlock().getType() == Material.BEACON) {
             if (main.beaconLocation.containsKey(blockBrokenLocation)) {
                 Player brokenBeaconOwner = main.beaconLocation.get(blockBrokenLocation);
@@ -121,6 +126,7 @@ public class ListenerClass implements Listener {
                                 playerBreaking.getName() + "!");
                     }
                     main.beaconLocation.remove(blockBrokenLocation);
+                    brokenBeaconOwner.setBedSpawnLocation(world.getSpawnLocation());
                 }
             }
         }
@@ -227,8 +233,8 @@ public class ListenerClass implements Listener {
             } else if(e.getDirection() == BlockFace.DOWN) {
                 if(main.beaconXZ.containsKey(blockLocation.getX()) &&
                 main.beaconXZ.containsValue(blockLocation.getZ())) {
-                    if(main.blockY.contains(blockLocation.getY() - beingPushed - 2) ||
-                    main.blockY.contains(blockLocation.getY() - beingPushed - 3)) {
+                    if(main.blockY.contains(blockLocation.getY() - beingPushed - 3) ||
+                    main.blockY.contains(blockLocation.getY() - beingPushed - 4)) {
                         e.setCancelled(true);
                     }
                 }
@@ -236,6 +242,76 @@ public class ListenerClass implements Listener {
         }
 
     }
+
+// Made by Me...
+/* -------------------------------------------------------------------------------- */
+    @EventHandler
+    public void onPlaceFluid(PlayerInteractEvent event) {
+        if (event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
+        Material type;
+        if (event.getItem() == null) return;
+        if (event.getItem().getType() == Material.WATER_BUCKET) {
+            type = Material.WATER;
+        } else if (event.getItem().getType() == Material.LAVA_BUCKET) {
+            type = Material.LAVA;
+        } else return;
+        Block block = event.getClickedBlock().getRelative(event.getBlockFace());
+        if (generates(type, block)) {
+            event.setCancelled(true);
+            return;
+        } else {
+            BlockFace[] nesw = {BlockFace.DOWN, BlockFace.UP, BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST};
+            for (BlockFace face : nesw) {
+                if (generates(type, block.getRelative(face))) {
+                    System.out.println(face);
+                    event.setCancelled(true);
+                    return;
+                }
+            }
+        }
+    }
+
+    @EventHandler()
+    public void disableLavaWaterBlockCreation(BlockFromToEvent event) {
+        if (event.isCancelled()) return;
+        if (!event.getBlock().isLiquid()) return;
+        Material type = event.getBlock().getType();
+        Block to = event.getToBlock();
+        if (generates(event.getBlock(), to)) {
+            event.setCancelled(true);
+            return;
+        } else {
+            BlockFace[] nesw = {BlockFace.DOWN, BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST};
+            for (BlockFace face : nesw) {
+                if (generates(event.getBlock(), to.getRelative(face))) {
+                    event.setCancelled(true);
+                    return;
+                }
+            }
+        }
+
+    }
+
+    private boolean generates(Block from, Block to) {
+        if (!to.isLiquid()) return false;
+        return generates(from.getType(), to.getType());
+    }
+
+    private boolean generates(Material from, Block to) {
+        if (!to.isLiquid()) return false;
+        return generates(from, to.getType());
+    }
+
+    private boolean generates(Material from, Material to) {
+        if (from == Material.STATIONARY_WATER) from = Material.WATER;
+        else if (from == Material.STATIONARY_LAVA) from = Material.LAVA;
+
+        if (to == Material.STATIONARY_WATER) to = Material.WATER;
+        else if (to == Material.STATIONARY_LAVA) to = Material.LAVA;
+
+        return from != to;
+    }
+/* -------------------------------------------------------------------------------- */
 
 //    @EventHandler
 //    public void onInventoryClick(InventoryClickEvent e) {
